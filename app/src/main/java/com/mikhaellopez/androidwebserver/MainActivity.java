@@ -25,7 +25,7 @@ import android.widget.TextView;
  */
 public class MainActivity extends AppCompatActivity {
 
-    private static final int DEFAULT_PORT = 8080;
+    public static final int DEFAULT_PORT = 8080;
 
     // INSTANCE OF ANDROID WEB SERVER
     private AndroidWebServer androidWebServer;

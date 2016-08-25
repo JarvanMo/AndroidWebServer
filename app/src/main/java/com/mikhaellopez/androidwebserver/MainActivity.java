@@ -43,6 +43,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        System.setProperty("http.keepAlive","false");
 
         // INIT VIEW
         coordinatorLayout = (CoordinatorLayout) findViewById(R.id.coordinatorLayout);

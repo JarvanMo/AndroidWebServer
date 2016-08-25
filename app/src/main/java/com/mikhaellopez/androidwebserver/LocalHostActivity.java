@@ -40,7 +40,7 @@ public class LocalHostActivity extends AppCompatActivity{
     protected void onResume() {
         super.onResume();
         if(mWebView != null){
-            mWebView.loadUrl("http://localhost:8080/");
+            mWebView.loadUrl("http://localhost:8080/com.example.vlc/update/output.m3u8");
         }
     }
 }

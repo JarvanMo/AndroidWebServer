@@ -1,5 +1,8 @@
 package com.mikhaellopez.androidwebserver;
 
+import android.util.Log;
+
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -28,51 +31,55 @@ public class AndroidWebServer extends NanoHTTPD {
     @Override
     public Response serve(IHTTPSession session) {
 
-       final File f = new File("/storage/emulated/0/xyz/test.mp4");
-//        String msg = "<html><body><h1>Hello server</h1>\n";
-//        Map<String, String> parms = session.getParms();
-//        if (parms.get("username") == null) {
-//            msg += "<form action='?' method='get'>\n  <p>Your name: <input type='text' name='username'></p>\n" + "</form>\n";
-//        } else {
-//            msg += "<p>Hello, " + parms.get("username") + "!</p>";
-//        }
-//        return newFixedLengthResponse( msg + "</body></html>\n" );
-//        FileInputStream fis = null;
-//        try {
-//            fis = new FileInputStream(f);
-//            Response response = newFixedLengthResponse(Response.Status.PARTIAL_CONTENT, getMimeTypeForFile(f.getAbsolutePath()), fis,f.length());
-//            response.addHeader("Content-Length", "" + f.length());
-//            response.addHeader("Accept-Ranges", "bytes");
-//            response.addHeader("Content-Range", "bytes " + 0 + "-" +
-//                    f.length() + "/" + f.length());
-//            return response ;
-//        } catch (FileNotFoundException e) {
-//            e.printStackTrace();
-//           return response404(session,"");
-//        }
-//        StringBuilder builder = new StringBuilder();
-//        builder.append("<!DOCTYPE html><html><body>");
-//        builder.append("<video ");
-//        builder.append("width="+600+" ");
-//        builder.append("height="+600+" ");
-//        builder.append("controls>");
-//        builder.append("<source src="+getQuotaStr("/storage/emulated/0/xyz/test.mp4")+" ");
-//        builder.append("type="+getQuotaStr("video/mp4")+">");
-//        builder.append("Your browser doestn't support HTML5");
-//        builder.append("</video>");
-//        builder.append("</body></html>\n");
-//        return newFixedLengthResponse(builder.toString());
+        String m3u8Txt = "#EXTM3U\n" +
+                "#EXT-X-VERSION:3\n" +
+                "#EXT-X-TARGETDURATION:7\n" +
+                "#EXT-X-MEDIA-SEQUENCE:2\n" +
+                "#EXTINF:6.066667,\n" +
+                "output2.ts\n" +
+                "#EXTINF:5.933333,\n" +
+                "output3.ts\n" +
+                "#EXTINF:5.166667,\n" +
+                "output4.ts\n" +
+                "#EXTINF:5.100000,\n" +
+                "output5.ts\n" +
+                "#EXTINF:3.700000,\n" +
+                "output6.ts\n" +
+                "#EXT-X-ENDLIST";
+
+        String url = session.getUri();
+        String fileUrl = "";
+        String videoType = "";
+        if(url.endsWith(".m3u8")){
+//            fileUrl = "/storage/emulated/0/xyz/output.m3u8";
+            videoType = "application/x-mpegurl";
+        }else if(url.endsWith(".ts")) {
+            fileUrl = "/storage/emulated/0/xyz/"+url.substring(url.lastIndexOf("/"));
+            videoType = "video/mp2t";
+        }
+
 
         Response response = null;
 
         try {
-            InputStream inputStream = new FileInputStream(f);
-            int totalLength = inputStream.available();
-            String requestRange = session.getHeaders().get("range");
+            final File f = new File(fileUrl);
+            InputStream inputStream = null;
+            if(url.endsWith(".m3u8")){
+                byte[] bytes = m3u8Txt.getBytes("UTF-8");
+                inputStream = new ByteArrayInputStream(bytes);
+            }else if(url.endsWith(".ts")){
+                inputStream = new FileInputStream(f);
+            }
+//                InputStream inputStream = getResources().openRawResource(R.raw.encrypted);
+//                inputStream = new InputStreamEncrypted(inputStream);
 
+
+            int totalLength = inputStream.available();
+
+            String requestRange = session.getHeaders().get("range");
             if (requestRange == null) {
-                //http 200
-                response = NanoHTTPD.newFixedLengthResponse(Response.Status.OK, "video/mp4", inputStream, totalLength);
+                //http 200"video/mp4"
+                response = NanoHTTPD.newFixedLengthResponse(Response.Status.OK,videoType , inputStream, totalLength);
             } else {
                 //http 206
 
@@ -80,30 +87,21 @@ public class AndroidWebServer extends NanoHTTPD {
                 Matcher matcher = Pattern.compile("bytes=(\\d+)-(\\d*)").matcher(requestRange);
                 matcher.find();
                 long start = 0;
-                try {
-                    start = Long.parseLong(matcher.group(1));
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+                try { start = Long.parseLong(matcher.group(1)); } catch (Exception e) { e.printStackTrace(); }
                 //endregion
 
                 inputStream.skip(start);
 
                 long restLength = totalLength - start;
-                response = NanoHTTPD.newFixedLengthResponse(Response.Status.PARTIAL_CONTENT, "video/mp4", inputStream, restLength);
+                response = NanoHTTPD.newFixedLengthResponse(Response.Status.PARTIAL_CONTENT, videoType, inputStream, restLength);
 
                 String contentRange = String.format("bytes %d-%d/%d", start, totalLength, totalLength);
                 response.addHeader("Content-Range", contentRange);
             }
-
-
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-        return  response;
+        return response;
     }
 
 
